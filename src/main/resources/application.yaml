@@ -21,3 +21,11 @@ spring:
       chat:
         options:
           temperature: 0.2
+
+video:
+  analysis:
+    frames-per-second: 1
+
+yolov8:
+  service:
+    url: http://localhost:8000
