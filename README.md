@@ -24,9 +24,10 @@ The following vital signs are assessed to support patient classification:
 - **Respiratory rate**: Changes suggest respiratory failure or metabolic acidosis.
 - **Oxygen saturation**: Values below 90% indicate hypoxemia and the need for immediate support.
 
+
 ### Modalities Processed
 - **Audio**: Extracts speech and analyzes emotions from the audio stream.
-- **Video**: Detects patient facial emotions in real time.
+- **Video**: Detects patient facial emotions in real time. While patient screening, the system can also detect violence through video analysis.
 - **Medical Report**: Extracts key points, reads biometric data, symptoms, and other observations from the report.
 
 Each modality is processed individually and in real time. The results are then aggregated to classify the patient's condition. If necessary, the system will notify an emergency team.
