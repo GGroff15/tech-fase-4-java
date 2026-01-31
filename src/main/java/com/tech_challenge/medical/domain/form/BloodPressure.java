@@ -38,8 +38,8 @@ public final class BloodPressure {
         return systolic + "/" + diastolic;
     }
 
-    public boolean isHigh() {
-        return systolic >= 140 || diastolic >= 90;
+    public boolean isHigh(int highSystolic, int highDiastolic) {
+        return systolic >= highSystolic || diastolic >= highDiastolic;
     }
 
     @Override

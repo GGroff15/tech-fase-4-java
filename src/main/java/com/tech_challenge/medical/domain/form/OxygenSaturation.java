@@ -22,8 +22,8 @@ public final class OxygenSaturation {
         return percentage;
     }
 
-    public boolean isLow() {
-        return percentage < 95;
+    public boolean isLow(int lowThreshold) {
+        return percentage < lowThreshold;
     }
 
     @Override

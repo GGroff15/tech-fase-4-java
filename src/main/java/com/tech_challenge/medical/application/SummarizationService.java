@@ -2,6 +2,7 @@ package com.tech_challenge.medical.application;
 
 import com.tech_challenge.medical.domain.events.BufferedEvents;
 import com.tech_challenge.medical.domain.form.ClinicalForm;
+import com.tech_challenge.medical.domain.reference.EvaluatedVitalSigns;
 import com.tech_challenge.medical.domain.session.SessionBuffer;
 import com.tech_challenge.medical.domain.summary.ClinicalSummary;
 import com.tech_challenge.medical.domain.summary.EmotionSummary;
@@ -18,6 +19,12 @@ public class SummarizationService {
     private static final Logger log = LoggerFactory.getLogger(SummarizationService.class);
     private static final int TOP_N_OBJECTS = 5;
 
+    private final ReferenceEvaluationService referenceEvaluationService;
+
+    public SummarizationService(ReferenceEvaluationService referenceEvaluationService) {
+        this.referenceEvaluationService = referenceEvaluationService;
+    }
+
     public ClinicalSummary summarize(SessionBuffer buffer, ClinicalForm form) {
         if (buffer == null) {
             throw new IllegalArgumentException("Buffer cannot be null");
@@ -28,14 +35,16 @@ public class SummarizationService {
 
         BufferedEvents events = buffer.events();
         
+        EvaluatedVitalSigns evaluatedVitalSigns = referenceEvaluationService.evaluate(form.vitalSigns());
         EmotionSummary emotionSummary = summarizeEmotions(events);
         TranscriptSummary transcriptSummary = summarizeTranscripts(events);
         VideoSummary videoSummary = summarizeVideo(events);
         
-        log.info("Summarized session: {}", buffer.correlationId().asString());
+        log.info("Summarized session: {}", buffer.correlationId());
         
         return ClinicalSummary.of(
                 form,
+                evaluatedVitalSigns,
                 emotionSummary,
                 transcriptSummary,
                 videoSummary,

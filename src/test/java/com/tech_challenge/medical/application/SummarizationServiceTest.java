@@ -2,8 +2,11 @@ package com.tech_challenge.medical.application;
 
 import com.tech_challenge.medical.domain.events.*;
 import com.tech_challenge.medical.domain.form.*;
+import com.tech_challenge.medical.domain.reference.EvaluatedVitalSigns;
 import com.tech_challenge.medical.domain.session.SessionBuffer;
 import com.tech_challenge.medical.domain.summary.*;
+import com.tech_challenge.medical.infrastructure.config.VitalsReferenceProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,7 +19,44 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("SummarizationService tests")
 class SummarizationServiceTest {
 
-    private final SummarizationService service = new SummarizationService();
+    private SummarizationService service;
+    private ReferenceEvaluationService referenceEvaluationService;
+
+    @BeforeEach
+    void setUp() {
+        VitalsReferenceProperties properties = createVitalsReferenceProperties();
+        referenceEvaluationService = new ReferenceEvaluationService(properties);
+        service = new SummarizationService(referenceEvaluationService);
+    }
+
+    private VitalsReferenceProperties createVitalsReferenceProperties() {
+        VitalsReferenceProperties properties = new VitalsReferenceProperties();
+        
+        VitalsReferenceProperties.HeartRateConfig heartRate = new VitalsReferenceProperties.HeartRateConfig();
+        heartRate.setNormalMin(60);
+        heartRate.setNormalMax(100);
+        properties.setHeartRate(heartRate);
+        
+        VitalsReferenceProperties.TemperatureConfig temperature = new VitalsReferenceProperties.TemperatureConfig();
+        temperature.setFeverThreshold(37.5);
+        properties.setTemperature(temperature);
+        
+        VitalsReferenceProperties.BloodPressureConfig bloodPressure = new VitalsReferenceProperties.BloodPressureConfig();
+        bloodPressure.setHighSystolic(140);
+        bloodPressure.setHighDiastolic(90);
+        properties.setBloodPressure(bloodPressure);
+        
+        VitalsReferenceProperties.OxygenSaturationConfig oxygenSaturation = new VitalsReferenceProperties.OxygenSaturationConfig();
+        oxygenSaturation.setLowThreshold(95);
+        properties.setOxygenSaturation(oxygenSaturation);
+        
+        VitalsReferenceProperties.RespiratoryRateConfig respiratoryRate = new VitalsReferenceProperties.RespiratoryRateConfig();
+        respiratoryRate.setNormalMin(12);
+        respiratoryRate.setNormalMax(20);
+        properties.setRespiratoryRate(respiratoryRate);
+        
+        return properties;
+    }
 
     @Nested
     @DisplayName("when summarizing a complete session")
@@ -35,6 +75,7 @@ class SummarizationServiceTest {
             // Then
             assertAll(
                     () -> assertNotNull(summary.formData()),
+                    () -> assertNotNull(summary.evaluatedVitalSigns()),
                     () -> assertNotNull(summary.emotionSummary()),
                     () -> assertNotNull(summary.transcriptSummary()),
                     () -> assertNotNull(summary.videoSummary()),
@@ -231,7 +272,8 @@ class SummarizationServiceTest {
                         HeartRate.of(95),
                         BloodPressure.of(140, 90),
                         Temperature.ofCelsius(37.0),
-                        OxygenSaturation.of(98)
+                        OxygenSaturation.of(98),
+                        RespiratoryRate.of(16)
                 ),
                 MedicalHistory.of(
                         List.of("Hypertension"),

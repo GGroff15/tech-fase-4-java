@@ -3,7 +3,8 @@ package com.tech_challenge.medical.domain.events;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import com.tech_challenge.medical.domain.JoinRemovingOverlapCollector;
 
 public final class TranscriptChunks {
     private final List<TranscriptChunk> chunks;
@@ -40,7 +41,7 @@ public final class TranscriptChunks {
         return chunks.stream()
                 .sorted(Comparator.comparing(chunk -> chunk.timeWindow().start()))
                 .map(TranscriptChunk::text)
-                .collect(Collectors.joining(" "));
+                .collect(new JoinRemovingOverlapCollector());
     }
 
     public boolean hasLowConfidenceSegments() {

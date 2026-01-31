@@ -1,6 +1,7 @@
 package com.tech_challenge.medical.domain.summary;
 
 import com.tech_challenge.medical.domain.form.ClinicalForm;
+import com.tech_challenge.medical.domain.reference.EvaluatedVitalSigns;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Objects;
 
 public final class ClinicalSummary {
     private final ClinicalForm formData;
+    private final EvaluatedVitalSigns evaluatedVitalSigns;
     private final EmotionSummary emotionSummary;
     private final TranscriptSummary transcriptSummary;
     private final VideoSummary videoSummary;
@@ -17,6 +19,7 @@ public final class ClinicalSummary {
 
     private ClinicalSummary(
             ClinicalForm formData,
+            EvaluatedVitalSigns evaluatedVitalSigns,
             EmotionSummary emotionSummary,
             TranscriptSummary transcriptSummary,
             VideoSummary videoSummary,
@@ -24,6 +27,7 @@ public final class ClinicalSummary {
             Instant sessionEnd
     ) {
         this.formData = Objects.requireNonNull(formData, "Form data cannot be null");
+        this.evaluatedVitalSigns = Objects.requireNonNull(evaluatedVitalSigns, "Evaluated vital signs cannot be null");
         this.emotionSummary = Objects.requireNonNull(emotionSummary, "Emotion summary cannot be null");
         this.transcriptSummary = Objects.requireNonNull(transcriptSummary, "Transcript summary cannot be null");
         this.videoSummary = Objects.requireNonNull(videoSummary, "Video summary cannot be null");
@@ -37,17 +41,22 @@ public final class ClinicalSummary {
 
     public static ClinicalSummary of(
             ClinicalForm formData,
+            EvaluatedVitalSigns evaluatedVitalSigns,
             EmotionSummary emotionSummary,
             TranscriptSummary transcriptSummary,
             VideoSummary videoSummary,
             Instant sessionStart,
             Instant sessionEnd
     ) {
-        return new ClinicalSummary(formData, emotionSummary, transcriptSummary, videoSummary, sessionStart, sessionEnd);
+        return new ClinicalSummary(formData, evaluatedVitalSigns, emotionSummary, transcriptSummary, videoSummary, sessionStart, sessionEnd);
     }
 
     public ClinicalForm formData() {
         return formData;
+    }
+
+    public EvaluatedVitalSigns evaluatedVitalSigns() {
+        return evaluatedVitalSigns;
     }
 
     public EmotionSummary emotionSummary() {
@@ -73,6 +82,7 @@ public final class ClinicalSummary {
     public Map<String, Object> asMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("formData", formData.asMap());
+        map.put("evaluatedVitalSigns", evaluatedVitalSigns.asMap());
         map.put("emotionSummary", emotionSummary.asMap());
         map.put("transcriptSummary", transcriptSummary.asMap());
         map.put("videoSummary", videoSummary.asMap());

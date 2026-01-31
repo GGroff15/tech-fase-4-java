@@ -22,8 +22,8 @@ public final class Temperature {
         return celsius;
     }
 
-    public boolean isFever() {
-        return celsius >= 37.5;
+    public boolean isFever(double feverThreshold) {
+        return celsius >= feverThreshold;
     }
 
     @Override

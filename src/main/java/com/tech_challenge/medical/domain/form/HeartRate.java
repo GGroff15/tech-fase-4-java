@@ -22,8 +22,8 @@ public final class HeartRate {
         return beatsPerMinute;
     }
 
-    public boolean isAbnormal() {
-        return beatsPerMinute < 60 || beatsPerMinute > 100;
+    public boolean isAbnormal(int normalMin, int normalMax) {
+        return beatsPerMinute < normalMin || beatsPerMinute > normalMax;
     }
 
     @Override

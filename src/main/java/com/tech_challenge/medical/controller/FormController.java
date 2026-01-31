@@ -59,6 +59,9 @@ public class FormController {
                         : null,
                 request.vitalSigns().oxygenSaturation() != null
                         ? OxygenSaturation.of(request.vitalSigns().oxygenSaturation())
+                        : null,
+                request.vitalSigns().respiratoryRate() != null
+                        ? RespiratoryRate.of(request.vitalSigns().respiratoryRate())
                         : null
         );
 

@@ -173,7 +173,8 @@ class TriageServiceTest {
                         HeartRate.of(80),
                         BloodPressure.of(120, 80),
                         Temperature.ofCelsius(36.8),
-                        OxygenSaturation.of(98)
+                        OxygenSaturation.of(98),
+                        RespiratoryRate.of(16)
                 ),
                 MedicalHistory.of(List.of(), List.of(), List.of())
         );

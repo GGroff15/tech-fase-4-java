@@ -1,19 +1,5 @@
 spring:
   application.name: medical
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 100MB
-      max-request-size: 100MB
-  datasource:
-    url: jdbc:postgresql://localhost:5432/medical_db
-    username: user
-    password: password
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
   ai:
     openai:
       api-key: your-openai-api-key
@@ -22,13 +8,21 @@ spring:
         options:
           temperature: 0.2
 
-video:
-  analysis:
-    frames-per-second: 1
-
-yolov8:
-  service:
-    url: http://localhost:8000
+medical:
+  vitals:
+    heart-rate:
+      normal-min: 60
+      normal-max: 100
+    temperature:
+      fever-threshold: 37.5
+    blood-pressure:
+      high-systolic: 140
+      high-diastolic: 90
+    oxygen-saturation:
+      low-threshold: 95
+    respiratory-rate:
+      normal-min: 12
+      normal-max: 20
 
 triage:
   llm:
