@@ -6,6 +6,7 @@ import com.tech_challenge.medical.domain.session.SessionBuffer;
 import com.tech_challenge.medical.domain.summary.ClinicalSummary;
 import com.tech_challenge.medical.domain.triage.TriageResult;
 import com.tech_challenge.medical.infrastructure.llm.LlmClient;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
