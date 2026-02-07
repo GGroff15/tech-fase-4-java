@@ -1,0 +1,185 @@
+name: Deploy to Cloud Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+env:
+  GCP_REGION: us-central1
+  SERVICE_NAME: medical-triage
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Run tests and build
+        run: ./mvnw clean verify
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: target/surefire-reports/
+          retention-days: 7
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-jar
+          path: target/*.jar
+          retention-days: 1
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    
+    permissions:
+      contents: read
+      id-token: write
+
+    outputs:
+      image-digest: ${{ steps.build-push.outputs.digest }}
+      image-tag: ${{ steps.image-tag.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: application-jar
+          path: target/
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      - name: Generate image tag
+        id: image-tag
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          TAG="${SHORT_SHA}-$(date +%s)"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        id: build-push
+        run: |
+          IMAGE_URL="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}-images/${{ env.SERVICE_NAME }}"
+          
+          docker build -t "${IMAGE_URL}:${{ steps.image-tag.outputs.tag }}" .
+          docker tag "${IMAGE_URL}:${{ steps.image-tag.outputs.tag }}" "${IMAGE_URL}:latest"
+          docker tag "${IMAGE_URL}:${{ steps.image-tag.outputs.tag }}" "${IMAGE_URL}:${{ steps.image-tag.outputs.short_sha }}"
+          
+          docker push "${IMAGE_URL}:${{ steps.image-tag.outputs.tag }}"
+          docker push "${IMAGE_URL}:latest"
+          docker push "${IMAGE_URL}:${{ steps.image-tag.outputs.short_sha }}"
+          
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_URL}:${{ steps.image-tag.outputs.tag }}" | cut -d'@' -f2)
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+          echo "image_url=${IMAGE_URL}" >> $GITHUB_OUTPUT
+
+      - name: Output image info
+        run: |
+          echo "Image pushed successfully!"
+          echo "Image URL: ${{ steps.build-push.outputs.image_url }}"
+          echo "Image Tag: ${{ steps.image-tag.outputs.tag }}"
+          echo "Image Digest: ${{ steps.build-push.outputs.digest }}"
+
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_URL="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}-images/${{ env.SERVICE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}"
+          
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image="${IMAGE_URL}" \
+            --region=${{ env.GCP_REGION }} \
+            --platform=managed \
+            --quiet
+
+      - name: Get service URL
+        id: service-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.GCP_REGION }} \
+            --format='value(status.url)')
+          echo "url=${SERVICE_URL}" >> $GITHUB_OUTPUT
+
+      - name: Test deployment
+        run: |
+          echo "Testing health endpoint..."
+          curl -f "${{ steps.service-url.outputs.url }}/actuator/health" || exit 1
+          echo "Health check passed!"
+
+      - name: Deployment Summary
+        run: |
+          echo "### Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Service URL:** ${{ steps.service-url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tag:** ${{ needs.build-and-push.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ env.GCP_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test endpoints:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Health: ${{ steps.service-url.outputs.url }}/actuator/health" >> $GITHUB_STEP_SUMMARY
+          echo "- Create Session: ${{ steps.service-url.outputs.url }}/sessions" >> $GITHUB_STEP_SUMMARY
+          echo "- Swagger UI: ${{ steps.service-url.outputs.url }}/swagger-ui.html" >> $GITHUB_STEP_SUMMARY

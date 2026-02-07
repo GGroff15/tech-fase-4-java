@@ -1,6 +1,20 @@
 spring:
   application.name: medical
 
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
 medical:
   vitals:
     heart-rate:
@@ -47,9 +61,10 @@ triage:
     ttl-minutes: 10
     cleanup-interval-ms: 60000
   security:
-    api-key: your-secret-api-key-here
+    api-key: ${TRIAGE_API_KEY:your-secret-api-key-here}
 
 gemini:
+  api-key: ${GEMINI_API_KEY}
   model: gemini-2.5-flash
   system-prompt: |
     You are a medical triage assistant. Analyze the following clinical summary and provide a triage assessment.
