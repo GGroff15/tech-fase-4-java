@@ -1,31 +1,101 @@
 spring:
   application.name: medical
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 100MB
-      max-request-size: 100MB
-  datasource:
-    url: jdbc:postgresql://localhost:5432/medical_db
-    username: user
-    password: password
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-  ai:
-    openai:
-      api-key: your-openai-api-key
-      base-url: http://172.30.208.1:1234
-      chat:
-        options:
-          temperature: 0.2
 
-video:
-  analysis:
-    frames-per-second: 1
+medical:
+  vitals:
+    heart-rate:
+      normal-min: 60
+      normal-max: 100
+    temperature:
+      fever-threshold: 37.5
+    blood-pressure:
+      high-systolic: 140
+      high-diastolic: 90
+    oxygen-saturation:
+      low-threshold: 95
+    respiratory-rate:
+      normal-min: 12
+      normal-max: 20
 
-yolov8:
-  service:
-    url: http://localhost:8000
+triage:
+  llm:
+    prompt-template: |
+      You are a medical triage assistant. Analyze the following clinical summary and provide a triage assessment.
+      
+      IMPORTANT: You are assisting a trained medical professional. Do NOT make final medical decisions.
+      Your role is to highlight risk factors, detect inconsistencies, and suggest triage priority.
+      
+      Clinical Summary:
+      {summaryJson}
+      
+      Provide your assessment in the following JSON format:
+      {
+        "triageLevel": "LOW | MEDIUM | HIGH",
+        "riskFactors": ["factor1", "factor2"],
+        "inconsistencies": ["inconsistency1", "inconsistency2"],
+        "notesForPhysician": "detailed notes for the physician",
+        "confidence": 0.85
+      }
+      
+      Consider:
+      - Vital signs abnormalities
+      - Emotional state patterns
+      - Patient's verbal communication
+      - Medical history relevance
+      - Any contradictions between data sources
+  session:
+    ttl-minutes: 10
+    cleanup-interval-ms: 60000
+  security:
+    api-key: your-secret-api-key-here
+
+gemini:
+  model: gemini-2.5-flash
+  system-prompt: |
+    You are a medical triage assistant. Analyze the following clinical summary and provide a triage assessment.
+
+    IMPORTANT: You are assisting a trained medical professional. Do NOT make final medical decisions.
+
+    Your role is to highlight risk factors, detect inconsistencies, and suggest triage priority.
+
+    Consider:
+          - Vital signs abnormalities
+          - Emotional state patterns
+          - Patient's verbal communication
+          - Medical history relevance
+          - Any contradictions between data sources
+          - Compare if trancripted audio matches
+  output-schema: |
+    {
+      "type": "object",
+      "properties": {
+        "triageLevel": {
+          "type": "string"
+        },
+        "riskFactors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inconsistencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notesForPhysician": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "triageLevel",
+        "riskFactors",
+        "inconsistencies",
+        "notesForPhysician",
+        "confidence"
+      ]
+    }

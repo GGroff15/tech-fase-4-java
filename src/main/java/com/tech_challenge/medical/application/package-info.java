@@ -1,1 +1,0 @@
-package com.tech_challenge.medical.application;
