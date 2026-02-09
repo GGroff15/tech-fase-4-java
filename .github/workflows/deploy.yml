@@ -102,6 +102,8 @@ jobs:
       - name: Build and push Docker image
         id: build-push
         run: |
+          gcloud auth list
+
           IMAGE_URL="${{ secrets.GCP_ARTIFACT_REGISTRY }}/${{ env.IMAGE_NAME }}"
           
           docker build -t "${IMAGE_URL}:${{ steps.image-tag.outputs.tag }}" .
