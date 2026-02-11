@@ -142,8 +142,7 @@ jobs:
           echo "- \`${{ steps.image-tag.outputs.short_sha }}\` (commit)" >> $GITHUB_STEP_SUMMARY
 
     outputs:
-      image_url: ${{ steps.build-push.outputs.image_url }}
-      image_tag: ${{ steps.image-tag.outputs.tag }}
+      image_digest: ${{ steps.build-push.outputs.digest }}
 
   deploy:
     name: Deploy to Cloud Run
@@ -168,5 +167,5 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run services update medical-agent-api \
-            --image="${{ needs.build-and-push.outputs.image_url }}:${{ needs.build-and-push.outputs.image_tag }}" \
+            --image="${{ needs.build-and-push.outputs.image_digest }}" \
             --region="${{ env.GCP_REGION }}"
